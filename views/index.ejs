@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote / Nominate</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+<body>
+
+<h1>Ecommerce Team Player Award Voting and Nomination System</h1>
+<p>Nominations and votes will take place Monday-Friday. Winners will be announced at 6pm EST weekdays.</p>
+
+
+<h2>Today's Nominations</h2>
+
+
+
+<h2>Nominate</h2>
+<% if (locals.message !== undefined && locals.message.length > 0) { %>
+<p><em><%= message %></em></p>
+<% } %>
+
+<form action="/nominate" method="post">
+    <label>Nominate</label>
+    <input type="text" name="name" placeholder="Please enter nominee" />
+    <input type="submit" value="Nominate" />
+</form>
+
+<h2>Yesterday's results</h2>
+
+
+</body>
+</html>
