@@ -11,7 +11,15 @@
 
 
 <h2>Today's Nominations</h2>
+<% if (locals.today !== undefined && locals.today.length > 0) { %>
 
+    <% today.forEach(function(result) { %>
+<form action="/vote" method="post"><label>Name: <%= result.nominee %> Votes: <%= result.votes %></label> <input type="hidden" name="uid" value="<%= result._id %>" /><input type="submit" value="Vote!" /></form>
+    <% }); %>
+
+<% } else { %>
+<p><em>No nominations yet today. Please nominate a colleague below!</em></p>
+<% } %>
 
 
 <h2>Nominate</h2>
