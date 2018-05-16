@@ -9,6 +9,9 @@
 <h1>Ecommerce Team Player Award Voting and Nomination System</h1>
 <p>Nominations and votes will take place Monday-Friday. Winners will be announced at 6pm EST weekdays.</p>
 
+<% if (locals.message !== undefined && locals.message.length > 0) { %>
+<p><em><%= message %></em></p>
+<% } %>
 
 <h2>Today's Nominations</h2>
 <% if (locals.today !== undefined && locals.today.length > 0) { %>
@@ -23,9 +26,7 @@
 
 
 <h2>Nominate</h2>
-<% if (locals.message !== undefined && locals.message.length > 0) { %>
-<p><em><%= message %></em></p>
-<% } %>
+
 
 <form action="/nominate" method="post">
     <label>Nominate</label>

@@ -16,6 +16,7 @@ class Nomination {
         this.nominee = name;
         this.createdAt = new Date().toISOString().split('T')[0];
         this.votes = 0;
+        this.fingerprints = [];
     }
 }
 
@@ -31,9 +32,8 @@ async function nominate(person) {
 
         client.close();
     } catch(err) {
-        return err.stack;
+        console.log(err.stack);
     }
-    return 'Thank you for your nomination.';
 }
 
 async function vote(uid) {
@@ -42,12 +42,11 @@ async function vote(uid) {
         console.log("Connected correctly to server");
         const db = client.db(dbName);
 
-        let r = await db.collection(collection).findOneAndUpdate({ _id : ObjectID(uid)}, {$inc:{"votes":1}});
+        await db.collection(collection).findOneAndUpdate({ _id : ObjectID(uid)}, {$inc:{"votes":1}});
 
         client.close();
-        return 'Thank you for your vote.';
     } catch(err) {
-        return err.stack;
+        console.log(err.stack);
     }
 }
 
@@ -67,21 +66,29 @@ async function results(date) {
     }
 }
 
-router.get('/', function(req, res, next) {
+router.get('/message', function(req, res, next) {
 
-    results(new Date().toISOString().split('T')[0]).then(values => {
-        console.log(values);
-        res.render('index', { today : values , message: '' });
-    });
-
-
+    if (req.query.m) {
+       res.locals.message = req.query.m;
+    }
+    res.redirect('/');
 });
 
-router.get('/results', function(req, res, next) {
+router.get('/', function(req, res) {
+
+    let msg = req.session.message || '';
+    req.session.message = null;
+
+    results(new Date().toISOString().split('T')[0]).then(values => {
+        res.render('index', { today : values , message: msg });
+    });
+});
+
+router.get('/results', function(req, res) {
     res.render('index', { });
 });
 
-router.post('/nominate', function(req, res, next) {
+router.post('/nominate', function(req, res) {
 
     // TODO: check existing nomination
     if (req.body.name.length === 0) {
@@ -90,24 +97,38 @@ router.post('/nominate', function(req, res, next) {
         let person = new Nomination(req.body.name);
 
         nominate(person).then(value => {
-            //res.render('index', {message: value});
+            req.session.message = 'Thank you for your nomination today. Please be sure to vote.';
             res.redirect('/');
         });
     }
 });
 
-router.post('/vote', function(req, res, next) {
+router.post('/vote', function(req, res) {
 
-    // TODO: check fingerprint
-    if (req.body.uid.length === 0) {
-        console.log('body empty');
+    if(!req.cookies['fingerprint']) {
+
+        if (req.body.uid.length === 0) {
+            console.log('body empty');
+        } else {
+            let uid = req.body.uid;
+
+            vote(uid).then(value => {
+
+                var tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(0,0,0,0);
+
+                res.cookie('fingerprint', '1', { expires : tomorrow});
+
+                req.session.message = 'Thank you for voting today.';
+                res.redirect('/');
+            });
+        }
     } else {
-        let uid = req.body.uid;
-
-        vote(uid).then(value => {
-            res.redirect('/');
-        });
+        req.session.message = 'Oops, it looks like you have already voted today.';
+        res.redirect('/');
     }
+
 });
 
 module.exports = router;
