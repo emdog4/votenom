@@ -16,7 +16,7 @@
 <h2>Today's Nominations</h2>
 <% if (locals.today !== undefined && locals.today.length > 0) { %>
 
-    <% today.forEach(function(result) { %>
+    <% locals.today.forEach(function(result) { %>
 <form action="/vote" method="post"><label>Name: <%= result.nominee %> Votes: <%= result.votes %></label> <input type="hidden" name="uid" value="<%= result._id %>" /><input type="submit" value="Vote!" /></form>
     <% }); %>
 
@@ -35,7 +35,13 @@
 </form>
 
 <h2>Yesterday's results</h2>
+<% if (locals.yesterday !== undefined && locals.yesterday.length > 0) { %>
 
+<% locals.yesterday.forEach(function(result) { %>
+<p><%= result.nominee %> [Votes: <%= result.votes %>]</p>
+<% }); %>
+
+<% } %>
 
 </body>
 </html>

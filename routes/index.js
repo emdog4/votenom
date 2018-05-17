@@ -11,20 +11,42 @@ const collection = 'nominations';
 
 
 class Nomination {
-    // TODO: add fingerprint
     constructor(name) {
         this.nominee = name;
         this.createdAt = new Date().toISOString().split('T')[0];
         this.votes = 0;
-        this.fingerprints = [];
     }
 }
 
+function tomorrow() {
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0,0,0,0);
+    return tomorrow;
+}
+
+function lastPollDate() {
+
+    let today = new Date();
+
+    switch (today.getDay()) {
+        case 0:
+            today.setDate(today.getDate() - 2);
+            break;
+        case 1:
+            today.setDate(today.getDate() - 3);
+            break;
+        default:
+            today.setDate(today.getDate() - 1);
+            break;
+    }
+
+    return today.toISOString().split('T')[0];
+}
 
 async function nominate(person) {
     try {
         const client = await MongoClient.connect(url);
-        console.log("Connected correctly to server");
         const db = client.db(dbName);
 
         let r = await db.collection(collection).insertOne(person);
@@ -39,7 +61,6 @@ async function nominate(person) {
 async function vote(uid) {
     try {
         const client = await MongoClient.connect(url);
-        console.log("Connected correctly to server");
         const db = client.db(dbName);
 
         await db.collection(collection).findOneAndUpdate({ _id : ObjectID(uid)}, {$inc:{"votes":1}});
@@ -53,14 +74,15 @@ async function vote(uid) {
 async function results(date) {
     try {
         const client = await MongoClient.connect(url);
-        console.log("Connected correctly to server");
         const db = client.db(dbName);
 
-        let r = await db.collection(collection).find({'createdAt' : date }).toArray();
+        let c = await db.collection(collection).find({'createdAt' : date }).toArray();
+
+        let l = await db.collection(collection).find({'createdAt' : lastPollDate() }).sort({votes:-1}).toArray();
 
         client.close();
 
-        return r;
+        return {current: c, last: l};
     } catch(err) {
         return err.stack;
     }
@@ -78,9 +100,9 @@ router.get('/', function(req, res) {
 
     let msg = req.session.message || '';
     req.session.message = null;
-
-    results(new Date().toISOString().split('T')[0]).then(values => {
-        res.render('index', { today : values , message: msg });
+    let today = new Date().toISOString().split('T')[0];
+    results(today).then(values => {
+        res.render('index', { today : values.current , yesterday: values.last, message: msg });
     });
 });
 
@@ -114,11 +136,9 @@ router.post('/vote', function(req, res) {
 
             vote(uid).then(value => {
 
-                var tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                tomorrow.setHours(0,0,0,0);
 
-                res.cookie('fingerprint', '1', { expires : tomorrow});
+
+                res.cookie('fingerprint', '1', { expires : tomorrow() });
 
                 req.session.message = 'Thank you for voting today.';
                 res.redirect('/');
